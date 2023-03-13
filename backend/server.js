@@ -17,7 +17,8 @@ app.get("/", (req, res) => {
 })
 
 // customer routes 
-app.use("/api/customers", require("./routes/customerRoutes"))
+app.use("/api/customers", require("./routes/customerRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
 
 app.use(errorHandler)
 
