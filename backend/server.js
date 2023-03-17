@@ -16,9 +16,10 @@ app.get("/", (req, res) => {
     res.status(200).json({ msg: "Kudos 👋 from Kitchen Rack" })
 })
 
-// customer routes 
+//routes 
 app.use("/api/customers", require("./routes/customerRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/products", require("./routes/productRoutes"))
 
 app.use(errorHandler)
 
