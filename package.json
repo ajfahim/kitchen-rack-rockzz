@@ -1,11 +1,11 @@
 {
-  "name": "kitchen_rack_rockzz",
+  "name": "kitchen_rack_rockzz_backend",
   "version": "1.0.0",
   "description": "Kitchen Rack: One step ahead  (Replace the google sheet)",
   "main": "server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "server": "nodemon backend/server.js"
+    "start": "node server.js",
+    "server": "nodemon server.js"
   },
   "author": "AJ Fahim",
   "license": "ISC",
