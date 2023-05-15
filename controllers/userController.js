@@ -77,7 +77,6 @@ const loginUser = asyncHandler(async (req, res) => {
 //@route    POST /api/users/me
 //@access   Private
 const getUser = asyncHandler(async (req, res) => {
-  console.log("🚀 ~ file: userController.js:80 ~ getUser ~ req:", req);
   const { _id, name, email } = await User.findById(req.user.id);
 
   res.status(200).json({
