@@ -1,14 +1,38 @@
 const asyncHandler = require("express-async-handler");
-
 const Customer = require("../models/customerModel");
-const { paginatedResults } = require("../middleware/pagination");
 
 //@desc     Get Customers
 //@route    GET /api/customers
 //@access   Private
 const getCustomers = asyncHandler(async (req, res) => {
-  const customers = await Customer.find({});
-  res.status(200).json(customers);
+  console.log(
+    "🚀 ~ file: customerControllers.js:8 ~ getCustomers ~ req:",
+    req?.query
+  );
+  // get query params
+  const { page = 1, limit = 10 } = req.query;
+  // options for mongoose-paginate-v2
+  const paginationOptions = {
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10),
+  };
+  // total count
+  const totalCustomers = await Customer.countDocuments();
+  // pagination
+  const customers = await Customer.paginate({}, paginationOptions);
+
+  const { docs, hasNextPage, hasPrevPage } = customers;
+
+  const response = {
+    customers: docs,
+    currentPage: paginationOptions.page,
+    hasNextPage,
+    hasPrevPage,
+    limit: limit,
+    totalPages: Math.ceil(totalCustomers / paginationOptions.limit),
+    totalCount: totalCustomers,
+  };
+  res.status(200).json(response);
 });
 
 //@desc     Create Customer
