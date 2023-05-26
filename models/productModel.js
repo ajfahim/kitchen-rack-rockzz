@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const variationSchema = mongoose.Schema({
   unit: {
@@ -59,6 +60,7 @@ const productSchema = mongoose.Schema(
   }
 );
 
+productSchema.plugin(mongoosePaginate);
 // Exporting the product and variation schemas
 const Product = mongoose.model("Product", productSchema);
 module.exports = { Product, variationSchema };
