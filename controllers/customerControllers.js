@@ -5,10 +5,6 @@ const Customer = require("../models/customerModel");
 //@route    GET /api/customers
 //@access   Private
 const getCustomers = asyncHandler(async (req, res) => {
-  console.log(
-    "🚀 ~ file: customerControllers.js:8 ~ getCustomers ~ req:",
-    req?.query
-  );
   // get query params
   const { page = 1, limit = 10 } = req.query;
   // options for mongoose-paginate-v2
@@ -33,6 +29,19 @@ const getCustomers = asyncHandler(async (req, res) => {
     totalCount: totalCustomers,
   };
   res.status(200).json(response);
+});
+
+//@desc     Get Customer
+//@route    GET /api/customers
+//@access   Private
+const getCustomer = asyncHandler(async (req, res) => {
+  const customer = await Customer.findById(req.params.id);
+  if (!customer) {
+    res.status(400);
+    throw new Error("Customer not found");
+  }
+
+  res.status(200).json(customer);
 });
 
 //@desc     Create Customer
@@ -82,6 +91,7 @@ const deleteCustomer = asyncHandler(async (req, res) => {
 
 module.exports = {
   getCustomers,
+  getCustomer,
   createCustomer,
   updateCustomer,
   deleteCustomer,

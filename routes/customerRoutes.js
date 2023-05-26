@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   getCustomers,
+  getCustomer,
   createCustomer,
   updateCustomer,
   deleteCustomer,
@@ -16,6 +17,7 @@ router
   .post(protect, paginatedResults(User), createCustomer);
 router
   .route("/:id")
+  .get(protect, getCustomer)
   .put(protect, paginatedResults(User), updateCustomer)
   .delete(protect, paginatedResults(User), deleteCustomer);
 
