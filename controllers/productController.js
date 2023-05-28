@@ -20,7 +20,7 @@ const getProducts = asyncHandler(async (req, res) => {
 
   const { docs, hasNextPage, hasPrevPage } = products;
   const response = {
-    customers: docs,
+    products: docs,
     currentPage: paginationOptions.page,
     hasNextPage,
     hasPrevPage,
