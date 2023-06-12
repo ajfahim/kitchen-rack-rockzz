@@ -89,10 +89,41 @@ const deleteCustomer = asyncHandler(async (req, res) => {
   res.status(200).json({ id: req.params.id, name: customer.name });
 });
 
+//@desc     Seatch Customer by Name
+//@route    GET /api/customers/:name
+//@access   Private
+const searchCustomerByName = asyncHandler(async (req, res) => {
+  // get query params
+  const { name } = req.params;
+
+  const pipeline = [];
+
+  if (name) {
+    pipeline.push({
+      $match: {
+        name: { $regex: name, $options: "i" },
+      },
+    });
+  }
+
+  pipeline.push({
+    $project: {
+      label: "$name",
+      value: "$_id",
+      address: 1,
+    },
+  });
+
+  const customers = await Customer.aggregate(pipeline);
+
+  res.status(200).json(customers);
+});
+
 module.exports = {
   getCustomers,
   getCustomer,
   createCustomer,
   updateCustomer,
   deleteCustomer,
+  searchCustomerByName,
 };

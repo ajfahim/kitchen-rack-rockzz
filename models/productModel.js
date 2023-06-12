@@ -27,29 +27,9 @@ const productSchema = mongoose.Schema(
     },
     variations: {
       type: [variationSchema], // Array of variation objects
-      validate: [
-        // Custom validation function to check if either variations or unitPrice is present
-        function (value) {
-          return (
-            (this.unitPrice === undefined && value.length > 0) ||
-            (this.variations.length === 0 && this.unitPrice !== undefined)
-          );
-        },
-        "Either variations or unitPrice is required, but not both",
-      ],
     },
     unitPrice: {
       type: Number,
-      validate: [
-        // Custom validation function to check if either variations or unitPrice is present
-        function (value) {
-          return (
-            (this.variations.length === 0 && value !== undefined) ||
-            (this.variations.length > 0 && value === undefined)
-          );
-        },
-        "Either variations or unitPrice is required, but not both",
-      ],
     },
     image: {
       type: String,

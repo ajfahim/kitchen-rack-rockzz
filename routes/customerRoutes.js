@@ -6,6 +6,7 @@ const {
   createCustomer,
   updateCustomer,
   deleteCustomer,
+  searchCustomerByName,
 } = require("../controllers/customerControllers");
 const { protect } = require("../middleware/authMiddleware");
 const User = require("../models/userModel");
@@ -20,5 +21,6 @@ router
   .get(protect, getCustomer)
   .put(protect, paginatedResults(User), updateCustomer)
   .delete(protect, paginatedResults(User), deleteCustomer);
+router.route("/by-name/:name").get(protect, searchCustomerByName);
 
 module.exports = router;
