@@ -28,6 +28,7 @@ const productSchema = mongoose.Schema(
     variations: {
       type: [variationSchema], // Array of variation objects
     },
+
     unitPrice: {
       type: Number,
     },
@@ -41,6 +42,8 @@ const productSchema = mongoose.Schema(
 );
 
 productSchema.plugin(mongoosePaginate);
-// Exporting the product and variation schemas
+
+// Exporting the product and variation models
 const Product = mongoose.model("Product", productSchema);
-module.exports = { Product, variationSchema };
+const Variation = mongoose.model("Variation", variationSchema);
+module.exports = { Product };

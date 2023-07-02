@@ -7,28 +7,32 @@ const { Product } = require("../models/productModel");
 //@access   Private
 const getProducts = asyncHandler(async (req, res) => {
   // get query params
-  const { page = 1, limit = 10 } = req.query;
-  // options for mongoose-paginate-v2
-  const paginationOptions = {
-    page: parseInt(page, 10),
-    limit: parseInt(limit, 10),
-  };
-  // count products
-  const totalProducts = await Product.countDocuments();
-  //pagination
-  const products = await Product.paginate({}, paginationOptions);
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    // options for mongoose-paginate-v2
+    const paginationOptions = {
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+    };
+    // count products
+    const totalProducts = await Product.countDocuments();
+    //pagination
+    const products = await Product.paginate({}, paginationOptions);
 
-  const { docs, hasNextPage, hasPrevPage } = products;
-  const response = {
-    products: docs,
-    currentPage: paginationOptions.page,
-    hasNextPage,
-    hasPrevPage,
-    limit: limit,
-    totalPages: Math.ceil(totalProducts / paginationOptions.limit),
-    totalCount: totalProducts,
-  };
-  res.status(200).json(response);
+    const { docs, hasNextPage, hasPrevPage } = products;
+    const response = {
+      products: docs,
+      currentPage: paginationOptions.page,
+      hasNextPage,
+      hasPrevPage,
+      limit: limit,
+      totalPages: Math.ceil(totalProducts / paginationOptions.limit),
+      totalCount: totalProducts,
+    };
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(500).json({ message: "something went wrong" });
+  }
 });
 
 //@desc     Get a Product
