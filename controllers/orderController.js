@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const Order = require("../models/orderModel");
 const { Product, Variation } = require("../models/productModel");
 const { default: mongoose } = require("mongoose");
+
 //@desc     Get all Orders
 //@route    GET /api/orders
 //@access   Private
@@ -14,81 +15,19 @@ const getOrders = asyncHandler(async (req, res) => {
       limit: parseInt(limit, 10),
     };
 
-    // const orders = await Order.find({}, {}, paginationOptions)
-    //   .populate({
-    //     path: "customer",
-    //     select: "name",
-    //   })
-    //   .populate({
-    //     path: "products.product",
-    //   })
-    //   .populate({
-    //     path: "products.variation",
-    //   });
-
-    const orders = await Order.aggregate([
-      {
-        $lookup: {
-          from: "products", // Assuming the variations collection name is "variations"
-          localField: "products.product",
-          foreignField: "_id",
-          as: "aggproducts",
+    const orders = await Order.find({}, {}, paginationOptions)
+      .sort({ createdAt: -1 })
+      .populate({
+        path: "customer",
+        select: "name",
+      })
+      .populate({
+        path: "products.product",
+        select: "name hasVariation variations", // Include the 'variations' field
+        populate: {
+          path: "variations",
         },
-      },
-      {
-        $unwind: "$aggproducts",
-      },
-      // {
-      //   $unwind: {
-      //     path: "$aggproducts.variations",
-      //     preserveNullAndEmptyArrays: true,
-      //   },
-      // },
-      // {
-      //   $unwind: {
-      //     path: "$products",
-      //     preserveNullAndEmptyArrays: true,
-      //   },
-      // },
-      // {
-      //   $project: {
-      //     items: {
-      //       $filter: {
-      //         input: "$products",
-      //         as: "product",
-      //         cond: {
-      //           $eq: ["$$product.variations", "$aggproducts.variation._id"],
-      //         },
-      //       },
-      //     },
-      //   },
-      // },
-      // {
-      //   $match: {
-      //     $expr: {
-      //       $eq: ["$aggproducts.variations._id", "$products.variations"],
-      //     },
-      //   },
-      // },
-      // {
-      //   $addFields: {
-      //     matchedVariations: {
-      //       $filter: {
-      //         input: "$aggproducts.variations",
-      //         cond: { $in: ["$$this._id", "$products.variation"] },
-      //       },
-      //     },
-      //   },
-      // },
-      // {
-      //   $match: {"aggproducts.variations":"products.variation"
-      // },
-      // {
-      //   $match: {
-      //     populatedVariations: { $ne: [] }, // Filter orders that have populated variations
-      //   },
-      // },
-    ]);
+      });
 
     console.log(
       "🚀 ~ file: orderController.js:25 ~ getOrders ~ orders:",
@@ -127,6 +66,137 @@ const getOrder = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json(order);
+});
+
+//@desc     Get Ordered Products by Date
+//@route    DELETE /api/orders/:id
+//@access   Private
+const getOrderedProductByDate = asyncHandler(async (req, res) => {
+  try {
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); // Set time to midnight
+    console.log(
+      "🚀 ~ file: server.js:195 ~ app.use ~ currentDate:",
+      currentDate
+    );
+
+    const orderedProductsByDate = await Order.aggregate([
+      {
+        $match: {
+          processingDate: {
+            $gte: currentDate,
+            $lt: new Date(currentDate.getTime() + 24 * 60 * 60 * 1000), // Next day
+          },
+        },
+      },
+      {
+        $unwind: "$products",
+      },
+      {
+        $group: {
+          _id: {
+            product: "$products.product",
+            variation: "$products.variation",
+          },
+          quantity: { $sum: "$products.quantity" },
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id.product",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      {
+        $unwind: "$product",
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "product.variations._id",
+          foreignField: "variations._id",
+          as: "variations",
+        },
+      },
+      {
+        $unwind: "$variations",
+      },
+      {
+        $addFields: {
+          variationUnit: {
+            $arrayElemAt: [
+              "$variations.variations.unit",
+              {
+                $indexOfArray: ["$variations.variations._id", "$_id.variation"],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            product: "$product.name",
+            variation: "$_id.variation",
+          },
+          quantity: { $sum: "$quantity" },
+          variationUnit: { $first: "$variationUnit" },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.product",
+          variations: {
+            $push: {
+              k: "$variationUnit",
+              v: "$quantity",
+            },
+          },
+          quantity: { $sum: "$quantity" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          product: "$_id",
+          quantity: {
+            $cond: [{ $ne: ["$quantity", 0] }, "$quantity", null],
+          },
+          variations: {
+            $cond: [
+              { $ne: ["$variations", []] },
+              {
+                $arrayToObject: "$variations",
+              },
+              null,
+            ],
+          },
+        },
+      },
+    ]);
+
+    console.log(orderedProductsByDate);
+
+    console.log(
+      "🚀 ~ file: orderController.js:125 ~ getOrderedProductByDate ~ orderedProductsByDate:",
+      orderedProductsByDate
+    );
+    if (!orderedProductsByDate) {
+      res.status(400);
+      throw new Error("Order not found");
+    }
+
+    const response = {
+      orderedProductsByDate,
+    };
+
+    res.status(200).json(orderedProductsByDate);
+  } catch (error) {
+    console.log("Error:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 });
 
 //@desc     Create order
@@ -222,6 +292,7 @@ const deleteOrder = asyncHandler(async (req, res) => {
 module.exports = {
   getOrders,
   getOrder,
+  getOrderedProductByDate,
   createOrder,
   updateOrder,
   deleteOrder,
