@@ -48,7 +48,7 @@ const getCustomer = asyncHandler(async (req, res) => {
 //@route    POST /api/customers
 //@access   Private
 const createCustomer = asyncHandler(async (req, res) => {
-  if (!req.body.email) {
+  if (!req.body) {
     res.status(400);
     throw new Error("No body received");
   }

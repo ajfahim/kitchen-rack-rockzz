@@ -121,8 +121,13 @@ const getOrderedProductByDate = asyncHandler(async (req, res) => {
         },
       },
       {
-        $unwind: "$variations",
+        $unwind: {
+          path: "$variations",
+          // to include documents whose sizes field is null, missing, or an empty array.
+          preserveNullAndEmptyArrays: true,
+        },
       },
+
       {
         $addFields: {
           variationUnit: {
@@ -262,17 +267,60 @@ const createOrder = asyncHandler(async (req, res) => {
 //@route    PUT /api/order/:id
 //@access   Private
 const updateOrder = asyncHandler(async (req, res) => {
-  const order = await Order.findById(req.params.id);
-  if (!order) {
-    res.status(400);
-    throw new Error("Order not found");
-  }
+  try {
+    const order = await Order.findById(req.params.id);
+    console.log("🚀 ~ order:", order);
 
-  const updatedOrder = await Order.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  res.status(200).json(updatedOrder);
+    if (!order) {
+      res.status(404);
+      throw new Error("Order not found");
+    }
+
+    const { products } = req.body;
+    let totalPrice = 0;
+
+    for (const product of products) {
+      const { product: productId, variation, quantity } = product;
+      const productData = await Product.findById(productId);
+      console.log("🚀 ~ productData:", productData);
+
+      if (!productData) {
+        return res.status(400).json({ error: "Invalid product selected" });
+      }
+
+      const hasVariations = productData.hasVariation;
+      let productPrice;
+
+      if (hasVariations && variation) {
+        const variationData = productData.variations.find(
+          (v) => v._id.toString() === variation
+        );
+        if (!variationData) {
+          return res.status(400).json({ error: "Invalid variation selected" });
+        }
+
+        productPrice = variationData.price;
+      } else {
+        productPrice = productData.unitPrice;
+      }
+
+      totalPrice += productPrice * quantity;
+    }
+
+    order.customer = req.body.customer;
+    order.products = req.body.products;
+    order.totalPrice = totalPrice;
+    order.deliveryAddress = req.body.deliveryAddress;
+    order.deliveryDate = req.body.deliveryDate;
+    order.processingDate = req.body.processingDate;
+
+    const updatedOrder = await order.save();
+
+    return res.json(updatedOrder);
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+    return res.status(500).json({ error: "An error occurred" });
+  }
 });
 
 //@desc     Delete Order
