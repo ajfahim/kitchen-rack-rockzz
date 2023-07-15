@@ -155,7 +155,7 @@ const getOrderedProductByDate = asyncHandler(async (req, res) => {
           _id: "$_id.product",
           variations: {
             $push: {
-              k: { $ifNull: ["$variationUnit", ""] },
+              k: { $ifNull: ["$variationUnit", "No Variation"] },
               v: "$quantity",
             },
           },
