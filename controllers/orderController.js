@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const Order = require("../models/orderModel");
 const { Product, Variation } = require("../models/productModel");
 const { default: mongoose } = require("mongoose");
+const dayjs = require("dayjs");
 
 //@desc     Get all Orders
 //@route    GET /api/orders
@@ -29,10 +30,6 @@ const getOrders = asyncHandler(async (req, res) => {
         },
       });
 
-    console.log(
-      "🚀 ~ file: orderController.js:25 ~ getOrders ~ orders:",
-      orders
-    );
     const totalOrders = await Order.countDocuments();
     const hasNextPage = page * limit < totalOrders;
     const hasPrevPage = page > 1;
@@ -58,14 +55,76 @@ const getOrders = asyncHandler(async (req, res) => {
 //@route    GET /api/order/:id
 //@access   Private
 const getOrder = asyncHandler(async (req, res) => {
-  const order = await Order.findById(req.params.id);
+  console.log("🚀 ~ file: orderController.js:61 ~ getOrder ~ req:", req.params);
+  // const order = await Order.findById(req.params.id);
+  const order = await Order.aggregate([
+    {
+      $match: { _id: mongoose.Types.ObjectId(req.params.id) },
+    },
+    {
+      $lookup: {
+        from: "customers",
+        foreignField: "_id",
+        localField: "customer",
+        as: "customer",
+      },
+    },
+    {
+      $unwind: "$customer",
+    },
+    {
+      $addFields: {
+        customer: "$customer.name",
+      },
+    },
+    {
+      $lookup: {
+        from: "products",
+        foreignField: "_id",
+        localField: "products.product",
+        as: "populatedProducts",
+      },
+    },
+    {
+      $addFields: {
+        products: {
+          $map: {
+            input: "$products",
+            as: "product",
+            in: {
+              product: {
+                $arrayElemAt: [
+                  "$populatedProducts.name",
+                  {
+                    $indexOfArray: [
+                      "$populatedProducts._id",
+                      "$$product.product",
+                    ],
+                  },
+                ],
+              },
+              quantity: "$$product.quantity",
+              _id: "$$product._id",
+              variation: "$$product.variation",
+              hasVariations: true,
+            },
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        populatedProducts: 0, // Remove the temporary field "populatedProducts" from the output
+      },
+    },
+  ]);
 
   if (!order) {
     res.status(400);
     throw new Error("Order not found");
   }
 
-  res.status(200).json(order);
+  res.status(200).json(order[0]);
 });
 
 //@desc     Get Ordered Products by Date
@@ -75,10 +134,6 @@ const getOrderedProductByDate = asyncHandler(async (req, res) => {
   try {
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0); // Set time to midnight
-    console.log(
-      "🚀 ~ file: server.js:195 ~ app.use ~ currentDate:",
-      currentDate
-    );
 
     const orderedProductsByDate = await Order.aggregate([
       {
@@ -204,6 +259,106 @@ const getOrderedProductByDate = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Get Orders by Month for the current Year
+//@route    GET /api/orders/monthly-sales
+//@access   Private
+const geMonthlySales = asyncHandler(async (req, res) => {
+  try {
+    // Calculate the start and end dates of the current year
+    const currentYear = dayjs().year();
+    const startOfYear = dayjs().startOf("year");
+    const endOfYear = dayjs().endOf("year");
+
+    // Aggregate the orders within the current year and group by month
+    const salesData = await Order.aggregate([
+      {
+        $match: {
+          processingDate: {
+            $gte: startOfYear.toDate(),
+            $lte: endOfYear.toDate(),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$processingDate" } },
+          totalSales: { $sum: "$totalPrice" },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    // Prepare the result in the desired format
+    const formattedSalesData = salesData.map((data) => ({
+      month: dayjs(data._id).format("MMM"), // Format the date to "July, 2023"
+      totalSales: data.totalSales,
+    }));
+
+    res.json({ year: currentYear, data: formattedSalesData });
+  } catch (error) {
+    console.log(
+      "🚀 ~ file: orderController.js:305 ~ geMonthlySales ~ error:",
+      error
+    );
+    res
+      .status(500)
+      .json({ message: "Error fetching monthly sales data", error });
+  }
+});
+//@desc     Get Orders by Date for the current Month
+//@route    GET /api/orders/monthly-sales
+//@access   Private
+const getDailySales = asyncHandler(async (req, res) => {
+  try {
+    // Calculate the start and end dates of the current month
+    const currentDate = dayjs();
+    const startOfMonth = currentDate.startOf("month");
+    const endOfMonth = currentDate.endOf("month");
+    console.log(
+      "🚀 ~ file: orderController.js:275 ~ getDailySales ~ endOfMonth:",
+      endOfMonth.toDate()
+    );
+
+    // Aggregate the orders within the current month and group by day
+    const salesData = await Order.aggregate([
+      {
+        $match: {
+          processingDate: {
+            $gte: startOfMonth.toDate(),
+            $lte: endOfMonth.toDate(),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$processingDate" },
+          },
+          totalSales: { $sum: "$totalPrice" },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    // Prepare the result in the desired format
+    const formattedSalesData = salesData.map((data) => ({
+      date: dayjs(data._id).format("MMM DD"),
+      totalSales: data.totalSales,
+    }));
+
+    res.json({
+      month: currentDate.format("MMMM YYYY"),
+      data: formattedSalesData,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching daily sales data", error });
+  }
+});
+
 //@desc     Create order
 //@route    POST /api/orders
 //@access   Private
@@ -215,10 +370,7 @@ const createOrder = asyncHandler(async (req, res) => {
     for (const product of products) {
       const { product: productId, variation, quantity } = product;
       const productData = await Product.findById(productId);
-      console.log(
-        "🚀 ~ file: orderController.js:74 ~ createOrder ~ productData:",
-        productData
-      );
+
       if (!productData) {
         return res.status(400).json({ error: "Invalid product selected" });
       }
@@ -341,6 +493,8 @@ module.exports = {
   getOrders,
   getOrder,
   getOrderedProductByDate,
+  getDailySales,
+  geMonthlySales,
   createOrder,
   updateOrder,
   deleteOrder,

@@ -6,6 +6,8 @@ const {
   updateOrder,
   deleteOrder,
   getOrderedProductByDate,
+  getDailySales,
+  geMonthlySales,
 } = require("../controllers/orderController");
 const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
@@ -18,5 +20,7 @@ router
   .delete(protect, deleteOrder);
 
 router.get("/products/orderedProductsToday", protect, getOrderedProductByDate);
+router.get("/products/daily-sales", protect, getDailySales);
+router.get("/products/monthly-sales", protect, geMonthlySales);
 
 module.exports = router;
