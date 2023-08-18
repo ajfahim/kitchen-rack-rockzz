@@ -132,7 +132,8 @@ const getOrder = asyncHandler(async (req, res) => {
 //@access   Private
 const getOrderedProductByDate = asyncHandler(async (req, res) => {
   try {
-    const currentDate = new Date();
+    const currentDate = new Date(req.query.date);
+
     currentDate.setHours(0, 0, 0, 0); // Set time to midnight
 
     const orderedProductsByDate = await Order.aggregate([
@@ -237,12 +238,6 @@ const getOrderedProductByDate = asyncHandler(async (req, res) => {
       },
     ]);
 
-    console.log(orderedProductsByDate);
-
-    console.log(
-      "🚀 ~ file: orderController.js:125 ~ getOrderedProductByDate ~ orderedProductsByDate:",
-      orderedProductsByDate
-    );
     if (!orderedProductsByDate) {
       res.status(400);
       throw new Error("Order not found");
@@ -316,10 +311,6 @@ const getDailySales = asyncHandler(async (req, res) => {
     const currentDate = dayjs();
     const startOfMonth = currentDate.startOf("month");
     const endOfMonth = currentDate.endOf("month");
-    console.log(
-      "🚀 ~ file: orderController.js:275 ~ getDailySales ~ endOfMonth:",
-      endOfMonth.toDate()
-    );
 
     // Aggregate the orders within the current month and group by day
     const salesData = await Order.aggregate([
