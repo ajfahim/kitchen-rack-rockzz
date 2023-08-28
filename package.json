@@ -21,7 +21,9 @@
     "jsonwebtoken": "^9.0.0",
     "moment": "^2.29.4",
     "mongoose": "^6.10.0",
-    "mongoose-paginate-v2": "^1.7.1"
+    "mongoose-paginate-v2": "^1.7.1",
+    "timezone": "link:dayjs/plugin/timezone",
+    "utc": "link:dayjs/plugin/utc"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"

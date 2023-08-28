@@ -1,5 +1,5 @@
 Arguments: 
-  /usr/local/bin/node /usr/bin/yarn add dayjs
+  /usr/local/bin/node /usr/bin/yarn add dayjs/plugin/utc
 
 PATH: 
   /usr/local/bin:/usr/bin:/usr/local/sbin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
@@ -14,8 +14,17 @@ Platform:
   linux x64
 
 Trace: 
-  Error: getaddrinfo EAI_AGAIN registry.yarnpkg.com
-      at GetAddrInfoReqWrap.onlookup [as oncomplete] (node:dns:107:26)
+  Error: https://registry.yarnpkg.com/dayjs%2fplugin/utc: Request "https://registry.yarnpkg.com/dayjs%2fplugin/utc" returned a 405
+      at params.callback [as _callback] (/usr/lib/node_modules/yarn/lib/cli.js:66154:18)
+      at self.callback (/usr/lib/node_modules/yarn/lib/cli.js:140890:22)
+      at Request.emit (node:events:513:28)
+      at Request.<anonymous> (/usr/lib/node_modules/yarn/lib/cli.js:141862:10)
+      at Request.emit (node:events:513:28)
+      at IncomingMessage.<anonymous> (/usr/lib/node_modules/yarn/lib/cli.js:141784:12)
+      at Object.onceWrapper (node:events:627:28)
+      at IncomingMessage.emit (node:events:525:35)
+      at endReadableNT (node:internal/streams/readable:1359:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
 
 npm manifest: 
   {
@@ -25,7 +34,8 @@ npm manifest:
     "main": "server.js",
     "scripts": {
       "start": "node index.js",
-      "server": "nodemon index.js"
+      "server": "nodemon index.js",
+      "dev": "nodemon index.js"
     },
     "author": "AJ Fahim",
     "license": "ISC",
@@ -33,6 +43,7 @@ npm manifest:
       "bcryptjs": "^2.4.3",
       "colors": "^1.4.0",
       "cors": "^2.8.5",
+      "dayjs": "^1.11.9",
       "dotenv": "^16.0.3",
       "express": "^4.18.2",
       "express-async-handler": "^1.2.0",
@@ -978,6 +989,11 @@ Lockfile:
     dependencies:
       object-assign "^4"
       vary "^1"
+  
+  dayjs@^1.11.9:
+    version "1.11.9"
+    resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.9.tgz#9ca491933fadd0a60a2c19f6c237c03517d71d1a"
+    integrity sha512-QvzAURSbQ0pKdIye2txOzNaHmxtUBXerpY0FJsFXUMKbIZeFm5ht1LS/jFsrncjnmtv8HsG0W2g6c0zUjZWmpA==
   
   debug@2.6.9:
     version "2.6.9"

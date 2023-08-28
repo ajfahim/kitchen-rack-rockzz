@@ -4,6 +4,11 @@ const Order = require("../models/orderModel");
 const { Product, Variation } = require("../models/productModel");
 const { default: mongoose } = require("mongoose");
 const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 //@desc     Get all Orders
 //@route    GET /api/orders
@@ -136,14 +141,17 @@ const getOrderedProductByDate = asyncHandler(async (req, res) => {
     console.log("Current server time:", currentTime);
     const currentDate = new Date(req.query.date);
 
-    currentDate.setHours(0, 0, 0, 0); // Set time to midnight
+    const requestedDate = dayjs.tz(req.query.date, "Asia/Dhaka"); // Convert to BST
+
+    const startOfDayBST = requestedDate.startOf("day");
+    const endOfDayBST = requestedDate.endOf("day");
 
     const orderedProductsByDate = await Order.aggregate([
       {
         $match: {
           processingDate: {
-            $gte: currentDate,
-            $lt: new Date(currentDate.getTime() + 24 * 60 * 60 * 1000), // Next day
+            $gte: startOfDayBST.toDate(),
+            $lt: endOfDayBST.toDate(),
           },
         },
       },
