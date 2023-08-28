@@ -137,13 +137,10 @@ const getOrder = asyncHandler(async (req, res) => {
 //@access   Private
 const getOrderedProductByDate = asyncHandler(async (req, res) => {
   try {
-    const currentTime = new Date();
-    console.log("Current server time:", currentTime);
-    const currentDate = new Date(req.query.date);
-
     const requestedDate = dayjs.tz(req.query.date, "Asia/Dhaka"); // Convert to BST
 
     const startOfDayBST = requestedDate.startOf("day");
+
     const endOfDayBST = requestedDate.endOf("day");
 
     const orderedProductsByDate = await Order.aggregate([
