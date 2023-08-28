@@ -132,6 +132,8 @@ const getOrder = asyncHandler(async (req, res) => {
 //@access   Private
 const getOrderedProductByDate = asyncHandler(async (req, res) => {
   try {
+    const currentTime = new Date();
+    console.log("Current server time:", currentTime);
     const currentDate = new Date(req.query.date);
 
     currentDate.setHours(0, 0, 0, 0); // Set time to midnight
