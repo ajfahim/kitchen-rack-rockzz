@@ -269,10 +269,13 @@ const getOrderedProductByDate = asyncHandler(async (req, res) => {
 //@access   Private
 const geMonthlySales = asyncHandler(async (req, res) => {
   try {
+    // Convert current time to the desired timezone
+    const currentTime = dayjs().tz("Asia/Dhaka");
+    console.log("Current server time:", currentTime.format());
+
     // Calculate the start and end dates of the current year
-    const currentYear = dayjs().year();
-    const startOfYear = dayjs().startOf("year");
-    const endOfYear = dayjs().endOf("year");
+    const startOfYear = currentTime.startOf("year");
+    const endOfYear = currentTime.endOf("year");
 
     // Aggregate the orders within the current year and group by month
     const salesData = await Order.aggregate([
@@ -286,7 +289,12 @@ const geMonthlySales = asyncHandler(async (req, res) => {
       },
       {
         $group: {
-          _id: { $dateToString: { format: "%Y-%m", date: "$processingDate" } },
+          _id: {
+            $dateToString: {
+              format: "%Y-%m",
+              date: { $add: ["$processingDate", 6 * 60 * 60 * 1000] }, // Convert to UTC+6 (BST)
+            },
+          },
           totalSales: { $sum: "$totalPrice" },
         },
       },
@@ -297,16 +305,13 @@ const geMonthlySales = asyncHandler(async (req, res) => {
 
     // Prepare the result in the desired format
     const formattedSalesData = salesData.map((data) => ({
-      month: dayjs(data._id).format("MMM"), // Format the date to "July, 2023"
+      month: dayjs(data._id).format("MMM"), // Format the date to "July"
       totalSales: data.totalSales,
     }));
 
-    res.json({ year: currentYear, data: formattedSalesData });
+    res.json({ year: currentTime.year(), data: formattedSalesData });
   } catch (error) {
-    console.log(
-      "🚀 ~ file: orderController.js:305 ~ geMonthlySales ~ error:",
-      error
-    );
+    console.log("Error:", error);
     res
       .status(500)
       .json({ message: "Error fetching monthly sales data", error });
@@ -317,10 +322,21 @@ const geMonthlySales = asyncHandler(async (req, res) => {
 //@access   Private
 const getDailySales = asyncHandler(async (req, res) => {
   try {
+    // Convert current time to the desired timezone
+    const currentTime = dayjs().tz("Asia/Dhaka");
+    console.log("Current server time:", currentTime.format());
+
     // Calculate the start and end dates of the current month
-    const currentDate = dayjs();
-    const startOfMonth = currentDate.startOf("month");
-    const endOfMonth = currentDate.endOf("month");
+    const startOfMonth = currentTime.startOf("month");
+    console.log(
+      "🚀 ~ file: orderController.js:326 ~ getDailySales ~ startOfMonth:",
+      startOfMonth.toDate()
+    );
+    const endOfMonth = currentTime.endOf("month");
+    console.log(
+      "🚀 ~ file: orderController.js:328 ~ getDailySales ~ endOfMonth:",
+      endOfMonth.toDate()
+    );
 
     // Aggregate the orders within the current month and group by day
     const salesData = await Order.aggregate([
@@ -335,7 +351,10 @@ const getDailySales = asyncHandler(async (req, res) => {
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$processingDate" },
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: { $add: ["$processingDate", 6 * 60 * 60 * 1000] }, // Convert to UTC+6 (BST)
+            },
           },
           totalSales: { $sum: "$totalPrice" },
         },
@@ -352,10 +371,11 @@ const getDailySales = asyncHandler(async (req, res) => {
     }));
 
     res.json({
-      month: currentDate.format("MMMM YYYY"),
+      month: currentTime.format("MMMM YYYY"),
       data: formattedSalesData,
     });
   } catch (error) {
+    console.log("Error:", error);
     res.status(500).json({ message: "Error fetching daily sales data", error });
   }
 });
