@@ -132,17 +132,16 @@ const getOrder = asyncHandler(async (req, res) => {
 //@access   Private
 const getOrderedProductByDate = asyncHandler(async (req, res) => {
   try {
-    const requestedDate = new Date(req.query.date);
-    const nextDay = new Date(requestedDate);
-    nextDay.setDate(nextDay.getDate() + 1); // Set to the next day
-    console.log("Requested Date:", requestedDate);
+    const currentDate = new Date(req.query.date);
+
+    currentDate.setHours(0, 0, 0, 0); // Set time to midnight
 
     const orderedProductsByDate = await Order.aggregate([
       {
         $match: {
           processingDate: {
-            $gte: requestedDate,
-            $lt: nextDay,
+            $gte: currentDate,
+            $lt: new Date(currentDate.getTime() + 24 * 60 * 60 * 1000), // Next day
           },
         },
       },
