@@ -8,16 +8,24 @@ const { Product } = require("../models/productModel");
 const getProducts = asyncHandler(async (req, res) => {
   // get query params
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, search } = req.query;
     // options for mongoose-paginate-v2
     const paginationOptions = {
       page: parseInt(page, 10),
       limit: parseInt(limit, 10),
     };
+    // Define the base query
+    const baseQuery = {};
+
+    // If there is a search query, modify the base query to include the search condition
+    if (search) {
+      // Customize this part based on your schema and how you want to perform the search
+      baseQuery.$or = [{ name: { $regex: new RegExp(search, "i") } }];
+    }
     // count products
-    const totalProducts = await Product.countDocuments();
+    const totalProducts = await Product.countDocuments(baseQuery);
     //pagination
-    const products = await Product.paginate({}, paginationOptions);
+    const products = await Product.paginate(baseQuery, paginationOptions);
 
     const { docs, hasNextPage, hasPrevPage } = products;
     const response = {

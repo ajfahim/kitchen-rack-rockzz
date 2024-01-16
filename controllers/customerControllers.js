@@ -14,11 +14,7 @@ const getCustomers = asyncHandler(async (req, res) => {
   // If there is a search query, modify the base query to include the search condition
   if (search) {
     // Customize this part based on your schema and how you want to perform the search
-    baseQuery.$or = [
-      { name: { $regex: new RegExp(search, "i") } },
-
-      // Add more fields if needed
-    ];
+    baseQuery.$or = [{ name: { $regex: new RegExp(search, "i") } }];
   }
 
   // options for mongoose-paginate-v2
