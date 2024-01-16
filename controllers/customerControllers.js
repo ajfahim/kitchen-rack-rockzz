@@ -6,16 +6,32 @@ const Customer = require("../models/customerModel");
 //@access   Private
 const getCustomers = asyncHandler(async (req, res) => {
   // get query params
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, search } = req.query;
+
+  // Define the base query
+  const baseQuery = {};
+
+  // If there is a search query, modify the base query to include the search condition
+  if (search) {
+    // Customize this part based on your schema and how you want to perform the search
+    baseQuery.$or = [
+      { name: { $regex: new RegExp(search, "i") } },
+
+      // Add more fields if needed
+    ];
+  }
+
   // options for mongoose-paginate-v2
   const paginationOptions = {
     page: parseInt(page, 10),
     limit: parseInt(limit, 10),
   };
-  // total count
-  const totalCustomers = await Customer.countDocuments();
-  // pagination
-  const customers = await Customer.paginate({}, paginationOptions);
+
+  // total count with search conditions
+  const totalCustomers = await Customer.countDocuments(baseQuery);
+
+  // pagination with search conditions
+  const customers = await Customer.paginate(baseQuery, paginationOptions);
 
   const { docs, hasNextPage, hasPrevPage } = customers;
 
@@ -28,6 +44,7 @@ const getCustomers = asyncHandler(async (req, res) => {
     totalPages: Math.ceil(totalCustomers / paginationOptions.limit),
     totalCount: totalCustomers,
   };
+
   res.status(200).json(response);
 });
 
