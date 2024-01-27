@@ -243,6 +243,9 @@ const getOrderedProductByDate = asyncHandler(async (req, res) => {
           },
         },
       },
+      {
+        $sort: { product: 1 },
+      },
     ]);
 
     if (!orderedProductsByDate) {
@@ -261,18 +264,80 @@ const getOrderedProductByDate = asyncHandler(async (req, res) => {
   }
 });
 
+//@desc     Get Orders by date
+//@route    GET /api/orders/getOrdersByDate
+//@access   Private
+const getOrdersByDate = asyncHandler(async (req, res) => {
+  console.log("🚀 ~ getOrdersByDate ~ req:", req.query);
+  try {
+    const requestedDate = dayjs.tz(req.query.date, "Asia/Dhaka"); // Convert to BST
+    console.log(
+      "🚀 ~ getOrdersByDate ~ requestedDate:",
+      requestedDate.toDate()
+    );
+
+    const startOfDayBST = requestedDate.startOf("day");
+
+    const endOfDayBST = requestedDate.endOf("day");
+
+    const orders = await Order.find(
+      {
+        processingDate: {
+          $gte: startOfDayBST.toDate(),
+          $lt: endOfDayBST.toDate(),
+        },
+      },
+      {}
+    )
+
+      .populate({
+        path: "customer",
+        select: "name",
+      })
+      .populate({
+        path: "products.product",
+        select: "name hasVariation variations", // Include the 'variations' field
+        populate: {
+          path: "variations",
+        },
+      })
+      .sort({ "customer.name": 1 });
+
+    const response = {
+      orders,
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.log("Error:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
 //@desc     Get Orders by Month for the current Year
 //@route    GET /api/orders/monthly-sales
 //@access   Private
 const geMonthlySales = asyncHandler(async (req, res) => {
   try {
+    const requestedYear = dayjs.tz(req.query.year, "Asia/Dhaka"); // Convert to BST
     // Convert current time to the desired timezone
     const currentTime = dayjs().tz("Asia/Dhaka");
-    console.log("Current server time:", currentTime.format());
 
     // Calculate the start and end dates of the current year
-    const startOfYear = currentTime.startOf("year");
-    const endOfYear = currentTime.endOf("year");
+
+    let startOfYear =
+      requestedYear === undefined
+        ? currentTime.startOf("year")
+        : requestedYear.startOf("year");
+    let endOfYear =
+      requestedYear === undefined
+        ? currentTime.endOf("year")
+        : requestedYear.endOf("year");
+
+    // if (!!requestedYear) {
+    //   startOfYear = requestedYear.startOf("year");
+    //   endOfYear = requestedYear.endOf("year");
+    // }
 
     // Aggregate the orders within the current year and group by month
     const salesData = await Order.aggregate([
@@ -302,11 +367,11 @@ const geMonthlySales = asyncHandler(async (req, res) => {
 
     // Prepare the result in the desired format
     const formattedSalesData = salesData.map((data) => ({
-      month: dayjs(data._id).format("MMM"), // Format the date to "July"
+      month: dayjs(data._id).format("MMM YY"), // Format the date to "July"
       totalSales: data.totalSales,
     }));
 
-    res.json({ year: currentTime.year(), data: formattedSalesData });
+    res.json({ year: requestedYear.year(), data: formattedSalesData });
   } catch (error) {
     console.log("Error:", error);
     res
@@ -314,6 +379,7 @@ const geMonthlySales = asyncHandler(async (req, res) => {
       .json({ message: "Error fetching monthly sales data", error });
   }
 });
+
 //@desc     Get Orders by Date for the current Month
 //@route    GET /api/orders/monthly-sales
 //@access   Private
@@ -325,15 +391,8 @@ const getDailySales = asyncHandler(async (req, res) => {
 
     // Calculate the start and end dates of the current month
     const startOfMonth = currentTime.startOf("month");
-    console.log(
-      "🚀 ~ file: orderController.js:326 ~ getDailySales ~ startOfMonth:",
-      startOfMonth.toDate()
-    );
+
     const endOfMonth = currentTime.endOf("month");
-    console.log(
-      "🚀 ~ file: orderController.js:328 ~ getDailySales ~ endOfMonth:",
-      endOfMonth.toDate()
-    );
 
     // Aggregate the orders within the current month and group by day
     const salesData = await Order.aggregate([
@@ -511,6 +570,7 @@ module.exports = {
   getOrders,
   getOrder,
   getOrderedProductByDate,
+  getOrdersByDate,
   getDailySales,
   geMonthlySales,
   createOrder,
