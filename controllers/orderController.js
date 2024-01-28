@@ -301,7 +301,7 @@ const getOrdersByDate = asyncHandler(async (req, res) => {
           path: "variations",
         },
       })
-      .sort({ "customer.name": 1 });
+      .sort({ createdAt: -1 });
 
     const response = {
       orders,
