@@ -28,6 +28,7 @@ app.use("/api/customers", require("./routes/customerRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
+app.use("/api/order-drafts", require("./routes/orderDraftRoutes"));
 
 app.use(errorHandler);
 
